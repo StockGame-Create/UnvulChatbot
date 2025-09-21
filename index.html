@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat - Enhanced Interface</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+        
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #2d2d2d;
+            --bg-card: rgba(255, 255, 255, 0.05);
+            --bg-glass: rgba(255, 255, 255, 0.08);
+            --bg-code: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #b4b4b4;
+            --text-muted: #6b7280;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-success: #22c55e;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --border: rgba(255, 255, 255, 0.1);
+            --border-hover: rgba(255, 255, 255, 0.2);
+            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            --shadow-lg: 0 35px 60px -12px rgba(0, 0, 0, 0.35);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 900px;
+            height: 85vh;
+            min-height: 650px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .ai-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+        }
+
+        .header-info h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            letter-spacing: -0.025em;
+        }
+
+        .header-info p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #22c55e;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #22c55e;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            scroll-behavior: smooth;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: var(--border-hover);
+        }
+
+        .message-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 20px 24px;
+            border-radius: 18px;
+            position: relative;
+            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            word-wrap: break-word;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.2);
+        }
+
+        .bot-message {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            align-self: flex-start;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+
+        .bot-message.streaming {
+            background: rgba(99, 102, 241, 0.05);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .message-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            align-self: flex-start;
+        }
+
+        .action-button {
+            padding: 8px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(10px);
+        }
+
+        .action-button:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-color: var(--border-hover);
+        }
+
+        .action-button.success {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--accent-success);
+            border-color: rgba(34, 197, 94, 0.2);
+        }
+
+        .cursor {
+            color: var(--accent-primary);
+            animation: blink 1s infinite;
+            font-weight: 600;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 20px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            align-self: flex-start;
+            backdrop-filter: blur(10px);
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .chat-input-container {
+            padding: 32px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 16px 20px;
+            background: transparent;
+            border: none;
+            font-size: 16px;
+            font-family: inherit;
+            font-weight: 400;
+            color: var(--text-primary);
+            resize: none;
+            outline: none;
+            min-height: 24px;
+            max-height: 120px;
+            line-height: 1.5;
+        }
+
+        .message-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .send-button {
+            width: 48px;
+            height: 48px;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .send-button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: var(--text-secondary);
+            margin: 80px 0;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .welcome-message h3 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            letter-spacing: -0.025em;
+        }
+
+        .welcome-message p {
+            font-size: 16px;
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .welcome-message small {
+            font-size: 14px;
+            color: var(--text-muted);
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: inline-block;
+            margin-top: 16px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        /* 코드 블록 스타일링 */
+        .message pre {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 16px 0;
+            position: relative;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .code-language {
+            font-weight: 500;
+            color: var(--accent-primary);
+        }
+
+        .code-copy-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .code-copy-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .code-copy-btn.copied {
+            color: var(--accent-success);
+        }
+
+        .message pre code {
+            display: block;
+            padding: 16px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-primary);
+            background: none;
+        }
+
+        .message code {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fbbf24;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        /* 텍스트 포맷팅 개선 */
+        .message strong {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .message em {
+            font-style: italic;
+            color: var(--accent-primary);
+        }
+
+        .message ul, .message ol {
+            margin: 12px 0;
+            padding-left: 24px;
+        }
+
+        .message li {
+            margin: 8px 0;
+            color: var(--text-primary);
+        }
+
+        .message li::marker {
+            color: var(--accent-primary);
+        }
+
+        .message p {
+            margin: 12px 0;
+            color: var(--text-primary);
+        }
+
+        .message p:first-child {
+            margin-top: 0;
+        }
+
+        .message p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message blockquote {
+            border-left: 4px solid var(--accent-primary);
+            padding: 12px 16px;
+            margin: 16px 0;
+            background: rgba(99, 102, 241, 0.05);
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        .message table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 14px;
+        }
+
+        .message th,
+        .message td {
+            border: 1px solid var(--border);
+            padding: 12px;
+            text-align: left;
+        }
+
+        .message th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .message td {
+            background: var(--bg-card);
+            color: var(--text-secondary);
+        }
+
+        /* 토스트 알림 */
+        .toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 16px 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.2);
+            color: var(--accent-success);
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .chat-container {
+                height: 90vh;
+                border-radius: 20px;
+                max-width: 100%;
+            }
+            
+            .chat-header {
+                padding: 20px;
+            }
+            
+            .header-info h1 {
+                font-size: 20px;
+            }
+            
+            .ai-avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+            
+            .chat-messages {
+                padding: 20px;
+                gap: 16px;
+            }
+            
+            .message {
+                max-width: 85%;
+                padding: 16px 20px;
+            }
+            
+            .chat-input-container {
+                padding: 20px;
+            }
+            
+            .welcome-message {
+                margin: 40px 0;
+            }
+            
+            .welcome-message h3 {
+                font-size: 24px;
+            }
+
+            .toast {
+                right: 12px;
+                top: 12px;
+                left: 12px;
+                right: 12px;
+                transform: translateY(-100px);
+            }
+
+            .toast.show {
+                transform: translateY(0);
+            }
+        }
+
+        /* 다크모드 스크롤바 */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        /* 이모지 스타일링 */
+        .emoji {
+            font-size: 1.2em;
+            margin: 0 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="header-left">
+                <div class="ai-avatar">🤖</div>
+                <div class="header-info">
+                    <h1>Unvul-ChatBot !!</h1>
+                    <p>Puter.js 사용 / 고급 모델 gpt-4o 이용</p>
+                </div>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>Online</span>
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <h3>👋 어서오세요!</h3>
+                <p>Unvul-ChatBot이 채팅을 기다리고 있어요...</p>
+                <p>궁금한 것이 있으시면 언제든 물어보세요!</p>
+                <small>Puter.js 로딩 중...</small>
+            </div>
+        </div>
+        
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <div class="input-wrapper">
+                <textarea 
+                    id="messageInput" 
+                    class="message-input" 
+                    placeholder="메시지를 입력하세요... (Shift+Enter로 줄바꿈)"
+                    rows="1"
+                ></textarea>
+                <button id="sendButton" class="send-button">
+                    ➤
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ModernChatBot {
+            constructor() {
+                this.messagesContainer = document.getElementById('chatMessages');
+                this.messageInput = document.getElementById('messageInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.typingIndicator = document.getElementById('typingIndicator');
+                this.isTyping = false;
+                this.puterReady = false;
+                this.lastBotMessage = null;
+                this.lastUserMessage = '';
+                
+                this.initializeEventListeners();
+                this.loadPuterAndInitialize();
+            }
+            
+            async loadPuterAndInitialize() {
+                try {
+                    await this.loadPuterScript();
+                    await this.waitForPuter();
+                    await this.initializePuter();
+                } catch (error) {
+                    console.error('Puter 초기화 실패:', error);
+                    this.addMessage('⚠️ AI 서비스 연결에 실패했습니다. 페이지를 새로고침해주세요.', 'bot', true);
+                }
+            }
+            
+            loadPuterScript() {
+                return new Promise((resolve, reject) => {
+                    if (window.puter) {
+                        resolve();
+                        return;
+                    }
+                    
+                    const script = document.createElement('script');
+                    script.src = 'https://js.puter.com/v2/';
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+            }
+            
+            waitForPuter() {
+                return new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('Puter 로딩 타임아웃')), 10000);
+                    
+                    const checkPuter = () => {
+                        if (window.puter && window.puter.ai) {
+                            clearTimeout(timeout);
+                            resolve();
+                        } else {
+                            setTimeout(checkPuter, 100);
+                        }
+                    };
+                    
+                    checkPuter();
+                });
+            }
+            
+            async initializePuter() {
+                try {
+                    this.puterReady = true;
+                    console.log('Puter.js 연결 성공!');
+                    
+                    const welcomeMsg = document.querySelector('.welcome-message');
+                    if (welcomeMsg) {
+                        welcomeMsg.innerHTML = `
+                            <h3>🚀 Unvul이 당신의 질문을 기다리고 있어요!</h3>
+                            <p>GPT-4o 모델이 활성화되었습니다.</p>
+                            <p>무엇이든 물어보세요! 😊</p>
+                            <small>✨ Puter.js 로드 성공!</small>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Puter 초기화 오류:', error);
+                    this.puterReady = false;
+                }
+            }
+            
+            initializeEventListeners() {
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                
+                this.messageInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+                
+                this.messageInput.addEventListener('input', () => {
+                    this.messageInput.style.height = 'auto';
+                    this.messageInput.style.height = Math.min(this.messageInput.scrollHeight, 120) + 'px';
+                });
+            }
+            
+            async sendMessage() {
+                const message = this.messageInput.value.trim();
+                if (!message || this.isTyping) {
+                    return;
+                }
+                
+                if (!this.puterReady) {
+                    this.addMessage('🔄 AI 서비스 연결 중입니다. 잠시 후 다시 시도해주세요.', 'bot', true);
+                    return;
+                }
+                
+                this.lastUserMessage = message;
+                this.addMessage(message, 'user');
+                this.messageInput.value = '';
+                this.messageInput.style.height = 'auto';
+                this.setTyping(true);
+                
+                try {
+                    console.log('AI 호출 시작... (스트리밍 모드)');
+                    
+                    const response = await puter.ai.chat(message, {
+                        model: "gpt-4o",
+                        stream: true,
+                        temperature: 0.7
+                    });
+                    
+                    this.setTyping(false);
+                    
+                    const messageContainer = document.createElement('div');
+                    messageContainer.className = 'message-container';
+                    
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message bot-message streaming';
+                    messageDiv.innerHTML = '<span class="cursor">▋</span>';
+                    
+                    messageContainer.appendChild(messageDiv);
+                    this.messagesContainer.appendChild(messageContainer);
+                    this.scrollToBottom();
+                    
+                    let fullText = '';
+                    let isFirstChunk = true;
+                    
+                    for await (const chunk of response) {
+                        let newText = '';
+                        
+                        if (isFirstChunk) {
+                            messageDiv.innerHTML = '';
+                            isFirstChunk = false;
+                        }
+                        
+                        if (typeof chunk === 'string') {
+                            newText = chunk;
+                        } else if (chunk && chunk.text) {
+                            newText = chunk.text;
+                        } else if (chunk && chunk.content) {
+                            newText = chunk.content;
+                        } else if (chunk && chunk.choices && chunk.choices[0]) {
+                            newText = chunk.choices[0].delta?.content || chunk.choices[0].text || '';
+                        }
+                        
+                        if (newText) {
+                            fullText += newText;
+                            
+                            const formattedText = this.formatText(fullText);
+                            messageDiv.innerHTML = formattedText + '<span class="cursor">▋</span>';
+                            this.scrollToBottom();
+                            
+                            await new Promise(resolve => setTimeout(resolve, 20));
+                        }
+                    }
+                    
+                    messageDiv.innerHTML = this.formatText(fullText);
+                    messageDiv.classList.remove('streaming');
+                    
+                    // 액션 버튼 추가
+                    this.addActionButtons(messageContainer, fullText);
+                    this.lastBotMessage = fullText;
+                    
+                } catch (error) {
+                    this.setTyping(false);
+                    console.error('API 오류:', error);
+                    
+                    try {
+                        console.log('스트리밍 실패, 일반 모드로 재시도...');
+                        const response = await puter.ai.chat(message, {
+                            model: "gpt-4o",
+                            stream: false,
+                            temperature: 0.7
+                        });
+                        
+                        let botResponse = '';
+                        if (typeof response === 'string') {
+                            botResponse = response;
+                        } else if (response && typeof response === 'object') {
+                            const possiblePaths = [
+                                response.message?.content,
+                                response.content,
+                                response.text,
+                                response.choices?.[0]?.message?.content
+                            ];
+                            
+                            for (const path of possiblePaths) {
+                                if (path && typeof path === 'string' && path.trim()) {
+                                    botResponse = path.trim();
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (botResponse) {
+                            const messageContainer = this.addMessage(botResponse, 'bot');
+                            this.addActionButtons(messageContainer, botResponse);
+                            this.lastBotMessage = botResponse;
+                        } else {
+                            this.addMessage('응답을 받았지만 처리할 수 없습니다.', 'bot', true);
+                        }
+                        
+                    } catch (retryError) {
+                        console.error('재시도도 실패:', retryError);
+                        this.addMessage('오류가 발생했습니다: ' + error.message, 'bot', true);
+                    }
+                }
+            }
+            
+            addActionButtons(messageContainer, messageText) {
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'message-actions';
+                
+                // 복사 버튼
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'action-button';
+                copyBtn.innerHTML = '📋 복사';
+                copyBtn.addEventListener('click', () => this.copyToClipboard(messageText, copyBtn));
+                
+                // 다시 생성 버튼
+                const regenerateBtn = document.createElement('button');
+                regenerateBtn.className = 'action-button';
+                regenerateBtn.innerHTML = '🔄 다시 생성';
+                regenerateBtn.addEventListener('click', () => this.regenerateResponse());
+                
+                actionsDiv.appendChild(copyBtn);
+                actionsDiv.appendChild(regenerateBtn);
+                messageContainer.appendChild(actionsDiv);
+            }
+            
+            async copyToClipboard(text, button) {
+                try {
+                    // HTML 태그 제거
+                    const plainText = text.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+                    await navigator.clipboard.writeText(plainText);
+                    
+                    const originalHTML = button.innerHTML;
+                    button.innerHTML = '✅ 복사됨';
+                    button.classList.add('success');
+                    
+                    this.showToast('메시지가 클립보드에 복사되었습니다!', 'success');
+                    
+                    setTimeout(() => {
+                        button.innerHTML = originalHTML;
+                        button.classList.remove('success');
+                    }, 2000);
+                } catch (error) {
+                    console.error('복사 실패:', error);
+                    this.showToast('복사에 실패했습니다.', 'error');
+                }
+            }
+            
+            async regenerateResponse() {
+                if (!this.lastUserMessage || this.isTyping) {
+                    return;
+                }
+                
+                this.setTyping(true);
+                
+                try {
+                    const response = await puter.ai.chat(this.lastUserMessage, {
+                        model: "gpt-4o",
+                        stream: true,
+                        temperature: 0.8 // 좀 더 창의적인 답변을 위해 온도 높임
+                    });
+                    
+                    this.setTyping(false);
+                    
+                    const messageContainer = document.createElement('div');
+                    messageContainer.className = 'message-container';
+                    
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message bot-message streaming';
+                    messageDiv.innerHTML = '<span class="cursor">▋</span>';
+                    
+                    messageContainer.appendChild(messageDiv);
+                    this.messagesContainer.appendChild(messageContainer);
+                    this.scrollToBottom();
+                    
+                    let fullText = '';
+                    let isFirstChunk = true;
+                    
+                    for await (const chunk of response) {
+                        let newText = '';
+                        
+                        if (isFirstChunk) {
+                            messageDiv.innerHTML = '';
+                            isFirstChunk = false;
+                        }
+                        
+                        if (typeof chunk === 'string') {
+                            newText = chunk;
+                        } else if (chunk && chunk.text) {
+                            newText = chunk.text;
+                        } else if (chunk && chunk.content) {
+                            newText = chunk.content;
+                        } else if (chunk && chunk.choices && chunk.choices[0]) {
+                            newText = chunk.choices[0].delta?.content || chunk.choices[0].text || '';
+                        }
+                        
+                        if (newText) {
+                            fullText += newText;
+                            
+                            const formattedText = this.formatText(fullText);
+                            messageDiv.innerHTML = formattedText + '<span class="cursor">▋</span>';
+                            this.scrollToBottom();
+                            
+                            await new Promise(resolve => setTimeout(resolve, 20));
+                        }
+                    }
+                    
+                    messageDiv.innerHTML = this.formatText(fullText);
+                    messageDiv.classList.remove('streaming');
+                    
+                    this.addActionButtons(messageContainer, fullText);
+                    this.lastBotMessage = fullText;
+                    
+                } catch (error) {
+                    this.setTyping(false);
+                    console.error('재생성 오류:', error);
+                    this.addMessage('재생성 중 오류가 발생했습니다: ' + error.message, 'bot', true);
+                }
+            }
+            
+            showToast(message, type = 'success') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                
+                const icon = type === 'success' ? '✅' : '❌';
+                toast.innerHTML = `${icon} ${message}`;
+                
+                document.body.appendChild(toast);
+                
+                // 애니메이션 시작
+                setTimeout(() => toast.classList.add('show'), 100);
+                
+                // 자동 제거
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+            
+            formatText(text) {
+                if (!text) return '';
+                
+                // 이모지 처리를 위한 정규식
+                const emojiRegex = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu;
+                
+                let formatted = text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/__(.*?)__/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/_(.*?)_/g, '<em>$1</em>')
+                    .replace(/~~(.*?)~~/g, '<del>$1</del>')
+                    .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+                    .replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
+                        const language = lang || 'text';
+                        const codeId = 'code-' + Math.random().toString(36).substr(2, 9);
+                        return `<pre><div class="code-header"><span class="code-language">${language}</span><button class="code-copy-btn" onclick="chatBot.copyCode('${codeId}')">📋 복사</button></div><code id="${codeId}">${code.trim()}</code></pre>`;
+                    })
+                    .replace(/> (.*?)(\n|$)/g, '<blockquote>$1</blockquote>')
+                    .replace(/\n\n/g, '</p><p>')
+                    .replace(/\n/g, '<br>')
+                    .replace(/^- (.*$)/gim, '<li>$1</li>')
+                    .replace(/^(\d+)\. (.*$)/gim, '<li>$2</li>');
+                
+                // 목록 처리
+                formatted = formatted.replace(/(<li>.*?<\/li>)+/gs, match => {
+                    if (match.includes('<li>1.') || /\d+\./.test(match)) {
+                        return '<ol>' + match.replace(/\d+\.\s*/g, '') + '</ol>';
+                    } else {
+                        return '<ul>' + match + '</ul>';
+                    }
+                });
+                
+                // 테이블 처리
+                formatted = formatted.replace(/\|(.+)\|/g, (match, content) => {
+                    const cells = content.split('|').map(cell => cell.trim());
+                    const isHeader = match.includes('---');
+                    
+                    if (isHeader) return '';
+                    
+                    const tag = cells.every(cell => cell.includes('**')) ? 'th' : 'td';
+                    return '<tr>' + cells.map(cell => `<${tag}>${cell}</${tag}>`).join('') + '</tr>';
+                });
+                
+                if (formatted.includes('<tr>')) {
+                    formatted = '<table>' + formatted + '</table>';
+                }
+                
+                // 단락 처리
+                if (formatted.includes('<br>') || formatted.includes('</p>')) {
+                    formatted = '<p>' + formatted + '</p>';
+                }
+                
+                // 이모지에 클래스 추가
+                formatted = formatted.replace(emojiRegex, '<span class="emoji">                        let botResponse =</span>');
+                
+                return formatted;
+            }
+            
+            async copyCode(codeId) {
+                const codeElement = document.getElementById(codeId);
+                if (!codeElement) return;
+                
+                try {
+                    await navigator.clipboard.writeText(codeElement.textContent);
+                    this.showToast('코드가 클립보드에 복사되었습니다!', 'success');
+                } catch (error) {
+                    console.error('코드 복사 실패:', error);
+                    this.showToast('코드 복사에 실패했습니다.', 'error');
+                }
+            }
+            
+            addMessage(content, type, isError = false) {
+                const messageContainer = document.createElement('div');
+                messageContainer.className = 'message-container';
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}-message ${isError ? 'error-message' : ''}`;
+                
+                if (type === 'bot' && !isError) {
+                    messageDiv.innerHTML = this.formatText(content);
+                } else {
+                    messageDiv.textContent = content;
+                }
+                
+                messageContainer.appendChild(messageDiv);
+                this.messagesContainer.appendChild(messageContainer);
+                this.scrollToBottom();
+                
+                return messageContainer;
+            }
+            
+            setTyping(typing) {
+                this.isTyping = typing;
+                this.sendButton.disabled = typing;
+                this.typingIndicator.style.display = typing ? 'block' : 'none';
+                
+                if (typing) {
+                    this.scrollToBottom();
+                }
+            }
+            
+            scrollToBottom() {
+                setTimeout(() => {
+                    this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+                }, 100);
+            }
+        }
+        
+        // 전역 변수로 chatBot 인스턴스 저장
+        let chatBot;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                chatBot = new ModernChatBot();
+                window.chatBot = chatBot; // 전역 접근을 위해
+            }, 500);
+        });
+        
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const messagesContainer = document.getElementById('chatMessages');
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
